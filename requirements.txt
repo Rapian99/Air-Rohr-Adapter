@@ -1,0 +1,6 @@
+loguru
+Flask
+Werkzeug
+prometheus_client
+waitress
+PyYAML
