@@ -10,6 +10,7 @@ PORT = 5000
 I = Info('my_build_version', 'Description of info')
 I.info({'version': 'v0.0.1', 'buildhost': 'test', 'builddate': '2025-03-03'})
 C = Counter('requests_total', 'HTTP Requests', ['app', 'method', 'endpoint'])
+SENSOR = Counter('sensor_samples', 'Sensor samples and info', ['app', 'Sensor', 'id', 'min_micro', 'max_micro', 'interval', 'signal', 'software_version'])
 PM10 = Gauge('sensor_pm10', 'PM10 value', ['app', 'Sensor', 'id'])
 PM25 = Gauge('sensor_pm25', 'PM25 value', ['app', 'Sensor', 'id'])
 TEMP = Gauge('sensor_temperature', 'Temperature value', ['app', 'Sensor', 'id'])
@@ -27,7 +28,7 @@ logger.info("|                                                                  
 logger.info("########################################################################################")
 
 logger.remove()
-logger.add(sys.stdout, level="DEBUG", format="{time} | {level} | {file} | {line} | {exception}| {message} ")
+logger.add(sys.stdout, level="DEBUG", format="{time} | {level} | {file} | {line} | {message} ")
 
 
 app = Flask(__name__)
@@ -75,39 +76,37 @@ def metrics(sensor, espid, data):
 
 
 @logger.catch
-def process():
-    try:
-        while True:
-            if len(requests) > 0:
-                req = requests.pop(0)
-                headers = req[0]
-                data = req[1]
-                print(f"{type(data)}:{data}")
-                dataval= data["sensordatavalues"]
-                print(f"{type(dataval)}:{dataval}")
-                logger.info(f"Processing request: {headers}")
-                metrics(headers["X-Sensor"], data["esp8266id"], dataval)
-            else:
-                logger.trace("No requests to process")
-                continue
-    except BaseException as process_error:
-        logger.error(f"Error while processing requests: {process_error}")
-
-# @C.labels(app= APPLICATION_NAME, method='get', endpoint='/metrics').inc()
-def run_metrics():
-    app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
-        '/metrics': make_wsgi_app()
-    })
-
-
-@logger.catch
 def main():
     logger.info(f"!!! Air-rohr-adapter started successfully on port {PORT} !!!")
-    threading.Thread(target=process, daemon=True).start()
-    app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
-        '/metrics': make_wsgi_app()
-    })
-    app.run(host="0.0.0.0", port=PORT)
+
+    stop_event = threading.Event()
+    
+    def process_with_event():
+        try:
+            while not stop_event.is_set():
+                if len(requests) > 0:
+                    req = requests.pop(0)
+                    headers = req[0]
+                    data = req[1]
+                    logger.info(f"Processing request: {headers}")
+                    metrics(headers["X-Sensor"], data["esp8266id"], data["sensordatavalues"])
+                else:
+                    logger.trace("No requests to process")
+                    stop_event.wait(1)
+        except BaseException as process_error:
+            logger.error(f"Error while processing requests: {process_error}")
+
+    threading.Thread(target=process_with_event, daemon=True).start()
+    
+    try:
+        app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
+            '/metrics': make_wsgi_app()
+        })
+        app.run(host="0.0.0.0", port=PORT)
+    except Exception as e:
+        logger.error(f"Failed to start the application: {e}")
+    finally:
+        stop_event.set()
 
 
 if __name__ == "__main__":
