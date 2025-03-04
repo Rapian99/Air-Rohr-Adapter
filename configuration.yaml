@@ -1,0 +1,2 @@
+logs_level: "INFO" # TRACE|DEBUG|INFO|WARN|ERROR|FATAL
+port: 5000
