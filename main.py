@@ -10,7 +10,7 @@ PORT = 5000
 I = Info('my_build_version', 'Description of info')
 I.info({'version': 'v0.0.1', 'buildhost': 'test', 'builddate': '2025-03-03'})
 C = Counter('requests_total', 'HTTP Requests', ['app', 'method', 'endpoint'])
-SENSOR = Counter('sensor_samples', 'Sensor samples and info', ['app', 'Sensor', 'id', 'min_micro', 'max_micro', 'interval', 'signal', 'software_version'])
+SENSOR = Gauge('sensor_samples', 'Sensor samples and info', ['app', 'Sensor', 'id', 'min_micro', 'max_micro', 'interval', 'signal', 'software_version'])
 PM10 = Gauge('sensor_pm10', 'PM10 value', ['app', 'Sensor', 'id'])
 PM25 = Gauge('sensor_pm25', 'PM25 value', ['app', 'Sensor', 'id'])
 TEMP = Gauge('sensor_temperature', 'Temperature value', ['app', 'Sensor', 'id'])
@@ -38,7 +38,7 @@ requests = []
 @app.route("/ara/v1/push", methods=["POST"])
 def api():
     try:
-        logger.debug(f"API request received: {request}")
+        logger.info(f"API request received: {request}")
         headers = dict(request.headers)
         data = request.get_json(silent=True)
         logger.debug(f"Headers: {headers}")
@@ -54,12 +54,10 @@ def api():
 
 
 @logger.catch
-def metrics(sensor, espid, data):
+def metrics(sensor, espid, software_version, data):
     try:
         logger.debug("Metrics request received")
-        print(type(data))
         for x in data:
-            print(type(x))
             if x["value_type"] == "SDS_P1":
                 PM10.labels(app=APPLICATION_NAME, Sensor=sensor, id=espid).set(float(x["value"]))
             elif x["value_type"] == "SDS_P2":
@@ -70,7 +68,13 @@ def metrics(sensor, espid, data):
                 HUM.labels(app=APPLICATION_NAME, Sensor=sensor, id=espid).set(float(x["value"]))
             elif x["value_type"] == "BME280_pressure":
                 PRESS.labels(app=APPLICATION_NAME, Sensor=sensor, id=espid).set(float(x["value"]))
-        logger.debug("Metrics processed successfully")
+        samples=data[5]["value"]
+        minmicro=data[6]["value"]
+        maxmicro=data[7]["value"]
+        interval=data[8]["value"]
+        signal=data[9]["value"]
+        SENSOR.labels(APPLICATION_NAME, sensor, espid, minmicro, maxmicro, interval, signal, software_version).set(float(samples))
+        logger.info("Metrics processed successfully")
     except BaseException as metrics_error:
         logger.error(f"Error while processing metrics request: {metrics_error}")
 
@@ -89,7 +93,7 @@ def main():
                     headers = req[0]
                     data = req[1]
                     logger.info(f"Processing request: {headers}")
-                    metrics(headers["X-Sensor"], data["esp8266id"], data["sensordatavalues"])
+                    metrics(headers["X-Sensor"], data["esp8266id"], data["software_version"], data["sensordatavalues"])
                 else:
                     logger.trace("No requests to process")
                     stop_event.wait(1)
@@ -103,8 +107,8 @@ def main():
             '/metrics': make_wsgi_app()
         })
         app.run(host="0.0.0.0", port=PORT)
-    except Exception as e:
-        logger.error(f"Failed to start the application: {e}")
+    except Exception as mainexception:
+        logger.error(f"Failed to start the application: {mainexception}")
     finally:
         stop_event.set()
 
