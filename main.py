@@ -11,20 +11,21 @@ from os import path
 
 APPLICATION_NAME = "Air-Rohr-Adapter"
 port = 5000
-FORMAT = "{time} | {level} | {file}:{line} | {message}"
+FORMAT = 'ts="{time}" function="{function}" process="{process.id}" thread="{thread.name}" level="{level}" file="{file}" message="{message}"'
 INFO = Info('my_build_version', 'Description of info')
 INFO.info({'version': 'v0.1.0', 'buildhost': 'PRD', 'builddate': '2025-03-03'})
 C = Counter('requests_total', 'HTTP Requests', ['app', 'method', 'endpoint'])
 GAUGE_LABELS = ['app', 'Sensor', 'id', 'interval', 'software_version']
+SENSOR_LABELS = ['app', 'Sensor', 'id']
 SENSOR = Gauge('sensor_samples', 'Sensor samples and info', GAUGE_LABELS)
 SIGNAL = Gauge('sensor_signal', 'Sensor signal and info', GAUGE_LABELS)
 MIN = Gauge('sensor_min_micro', 'Sensor min and info', GAUGE_LABELS)
 MAX = Gauge('sensor_max_micro', 'Sensor max and info', GAUGE_LABELS)
-PM10 = Gauge('sensor_pm10', 'PM10 value', ['app', 'Sensor', 'id'])
-PM25 = Gauge('sensor_pm25', 'PM25 value', ['app', 'Sensor', 'id'])
-TEMP = Gauge('sensor_temp', 'Temperature value', ['app', 'Sensor', 'id'])
-HUM = Gauge('sensor_humidity', 'Humidity value', ['app', 'Sensor', 'id'])
-PRESS = Gauge('sensor_pressure', 'Pressure value', ['app', 'Sensor', 'id'])
+PM10 = Gauge('sensor_pm10', 'PM10 value', SENSOR_LABELS)
+PM25 = Gauge('sensor_pm25', 'PM25 value', SENSOR_LABELS)
+TEMP = Gauge('sensor_temp', 'Temperature value', SENSOR_LABELS)
+HUM = Gauge('sensor_humidity', 'Humidity value', SENSOR_LABELS)
+PRESS = Gauge('sensor_pressure', 'Pressure value', SENSOR_LABELS)
 
 
 logger.remove()
