@@ -1,0 +1,8 @@
+services:
+  air-rohr-adapter:
+    image: air-rohr-adapter:v0.1.0
+    hostname: ara
+    container_name: air-rohr-adapter
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
