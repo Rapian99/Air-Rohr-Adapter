@@ -13,7 +13,7 @@ APPLICATION_NAME = "Air-Rohr-Adapter"
 port = 5000
 FORMAT = 'ts="{time}" function="{function}" process="{process.id}" thread="{thread.name}" level="{level}" file="{file}" message="{message}"'
 INFO = Info('my_build_version', 'Description of info')
-INFO.info({'version': 'v0.1.0', 'buildhost': 'PRD', 'builddate': '2025-03-03'})
+INFO.info({'version': 'v0.2.0', 'buildhost': 'PRD', 'builddate': '2025-09-07'})
 C = Counter('requests_total', 'HTTP Requests', ['app', 'method', 'endpoint'])
 GAUGE_LABELS = ['app', 'Sensor', 'id', 'interval', 'software_version']
 SENSOR_LABELS = ['app', 'Sensor', 'id']

@@ -1,6 +1,6 @@
 services:
   air-rohr-adapter:
-    image: air-rohr-adapter:v0.1.0
+    image: air-rohr-adapter:v0.2.0
     hostname: ara
     container_name: air-rohr-adapter
     restart: unless-stopped

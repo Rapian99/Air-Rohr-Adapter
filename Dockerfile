@@ -1,4 +1,6 @@
 FROM python:3.13.2-alpine3.21
+RUN apk add --no-cache gcc tzdata
+ENV TZ=Europe/Warsaw
 WORKDIR /air-rohr-adapter
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
